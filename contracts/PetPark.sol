@@ -30,18 +30,20 @@ contract PetPark {
     struct Borrower {
         uint age;
         Gender gender;
-
+        AnimalType species;
     }
 
     mapping(address => Borrower) petBorrower;
-    mapping(AnimalType => uint) petPark;
+    mapping(address => AnimalType) borrowedPet;
+    mapping(AnimalType => uint256) petPark;
+    mapping(AnimalType => bool) isAnimalBorrowed;
 
 
-    event Added(AnimalType _animalType, uint AnimalCount);
+    event Added(AnimalType _animalType, uint256 AnimalCount);
     event Borrowed(AnimalType _animalType);
     event Returned(AnimalType _animalType);
 
-    function add(AnimalType _animalType, uint _count) public onlyOwner {
+    function add(AnimalType _animalType, uint256 _count) public onlyOwner {
         if (_animalType == AnimalType.None) {
             revert ("Invalid animal");
         }
@@ -51,14 +53,11 @@ contract PetPark {
 
         emit Added(_animalType, _count);
 
-
     }
 
     function borrow(uint _age, Gender _gender, AnimalType _animalType) public {
 
         require (_age != 0, "Invalid Age");
-
-        Borrower memory borrower;
 
         // if (petPark[_animalType] <= 0) {
         //     revert ("Selected animal not available");
@@ -72,6 +71,8 @@ contract PetPark {
 
         require (petPark[_animalType] > 0, "Selected animal not available");
 
+        require(borrowedPet[msg.sender] != _animalType, "Already adopted a pet");
+
         if (_gender == Gender.Male) {
             require (_animalType == AnimalType.Dog || _animalType == AnimalType.Fish, "Invalid animal for men");
         }
@@ -84,7 +85,33 @@ contract PetPark {
 
         // require (petBorrower[msg.sender])
 
-        
+        // require(borrowedPet[msg.sender] != _animalType, "Already adopted a pet");
+
+        // borrowedPet[msg.sender] = _animalType;
+        // isAnimalBorrowed[_animalType] = true;
+
+        address borrower = msg.sender; 
+
+        if (petBorrower[borrower].age > 0 ) {
+            if (petBorrower[borrower].age != _age ) {
+                // Returning user has changed their age
+                revert("Invalid Age");
+            }
+            if (petBorrower[borrower].gender != _gender) {
+                revert("Invalid Gender");
+            }
+        }
+        else {
+            // First time borrower, set age and gender
+            petBorrower[borrower].age = _age;
+            petBorrower[borrower].gender = _gender;
+        }
+
+        if (petBorrower[borrower].species != AnimalType.None) {
+            revert("Already adopted a pet");
+        }
+
+        // Borrower memory borrower;
 
         // if (borrower.age != _age) {
         //     revert ("Invalid Age");
@@ -95,14 +122,21 @@ contract PetPark {
         // }
 
         emit Borrowed(_animalType);
+        
+    }
+
+    function giveBackAnimal(AnimalType _animalType) public {
+
+        // console.log(petPark[_animalType] = petPark[_animalType] + 1);
+        petPark[_animalType] = petPark[_animalType] + 1;
+
 
     }
 
-    function giveBackAnimal() public {
-
+    function animalCounts(AnimalType _animalType) public returns (uint256) {
+        // console.log(petPark[_animalType]);
+        return petPark[_animalType];
     }
-
-
 
 
 
